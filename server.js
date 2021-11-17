@@ -1,47 +1,29 @@
 require("dotenv").config();
 var socket = require("socket.io");
-const io = socket(server);
-const users = {};
-const socketToRoom = {};
+const server = require('http').Server()
+const app = express()
+const io = ('socket.io')(server);
+const { v4: uuidV4 } = require('uuid')
 
-io.on("connection", (socket) => {
-  socket.on("join room", (roomID) => {
-    if (users[roomID]) {
-      const length = users[roomID].length;
-      if (length === 4) {
-        socket.emit("room full");
-        return;
-      }
-      users[roomID].push(socket.id);
-    } else {
-      users[roomID] = [socket.id];
-    }
-    socketToRoom[socket.id] = roomID;
-    const usersInThisRoom = users[roomID].filter((id) => id !== socket.id);
+app.set('view-engine', 'ejs')
+app.use(express.static('public'))
+app.get('/', (req, res) => {
+  res.redirect(`/${uuidV4()}`)
+})
 
-    socket.emit("all users", usersInThisRoom);
-  });
+app.get('/:room', (req, res) => {
+  res.render(':room', {roomId: req.params.room})
+})
 
-  socket.on("sending signal", (payload) => {
-    io.to(payload.userToSignal).emit("user joined", {
-      signal: payload.signal,
-      callerID: payload.callerID,
-    });
-  });
+server.listen(env.PORT)
 
-  socket.on("returning signal", (payload) => {
-    io.to(payload.callerID).emit("receiving returned signal", {
-      signal: payload.signal,
-      id: socket.id,
-    });
-  });
+io.on('connection', socket => {
+  socket.on('join-room', (roomId, userId) => {
+    socket.join(roomId)
+    socket.to(roomId).broadcast.emit('user-connected', userId)
 
-  socket.on("disconnect", () => {
-    const roomID = socketToRoom[socket.id];
-    let room = users[roomID];
-    if (room) {
-      room = room.filter((id) => id !== socket.id);
-      users[roomID] = room;
-    }
-  });
-});
+    socket.on('disconnect', () => {
+      socket.to(roomId).broadcast.emit('user-disconnected', userId)
+    })
+  })
+})

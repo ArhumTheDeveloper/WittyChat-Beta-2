@@ -10,11 +10,13 @@
   "dependencies": {
     "add": "^2.0.6",
     "dotenv": "10.0.0",
+    "ejs": "^3.1.6",
     "express": "4.17.1",
-    "nodemon": "2.0.14",
     "socket.io": "4.3.2",
+    "socket.io-client": "^4.4.0",
     "synp": "1.9.8",
-    "typescript": "4.4.4"
+    "typescript": "4.4.4",
+    "uuid": "^8.3.2"
   },
   "scripts": {
     "start": "PROD=true peerjs --port 3001 && nodemon ./server.js"
